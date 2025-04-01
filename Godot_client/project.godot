@@ -13,3 +13,11 @@ config_version=5
 config/name="ThreeMensMoriss"
 run/main_scene="uid://bfqhi3iqcv8vr"
 config/features=PackedStringArray("4.4", "Forward Plus")
+
+[autoload]
+
+MultiplayerManager="*res://NetworkingScripts/MultiplayerManager.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-socketio/plugin.cfg")

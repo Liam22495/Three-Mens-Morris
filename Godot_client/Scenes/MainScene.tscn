@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://bfqhi3iqcv8vr"]
+[gd_scene load_steps=7 format=3 uid="uid://bfqhi3iqcv8vr"]
 
 [ext_resource type="Texture2D" uid="uid://bthdmw6cs4ejf" path="res://assets/board_background.png" id="1_hpc76"]
 [ext_resource type="Script" uid="uid://cahl5pdw22bag" path="res://Scenes/Main.gd" id="1_tr2i4"]
 [ext_resource type="PackedScene" uid="uid://c2ops8iapgvlp" path="res://Scenes/PlayerPiece.tscn" id="2_7rqgy"]
 [ext_resource type="PackedScene" uid="uid://d4fhqr1irf2eo" path="res://Scenes/OpponentPiece.tscn" id="3_qxria"]
+[ext_resource type="Script" uid="uid://diqhphfux5xux" path="res://Scenes/SocketIOClient.gd" id="5_qxria"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_7rqgy"]
 radius = 4.49511
@@ -105,3 +106,6 @@ text = "Waiting For Opponent...."
 horizontal_alignment = 1
 autowrap_mode = 2
 uppercase = true
+
+[node name="SocketNode" type="Node" parent="."]
+script = ExtResource("5_qxria")
