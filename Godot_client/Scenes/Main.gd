@@ -14,8 +14,10 @@ var opponent_piece_count = 0
 var in_movement_phase = false
 var selected_piece = null
 var selected_marker = null
+#Piecese per player
+const MAX_PIECES = 3
 
-#Map to enforce andjacent moves only
+#Map to enforce andjacent moves only (Movment vars)
 var adjacency_map = {
 	"Position0": ["Position1", "Position3"],
 	"Position1": ["Position0", "Position2", "Position4"],
@@ -28,7 +30,19 @@ var adjacency_map = {
 	"Position8": ["Position5", "Position7"]
 }
 
-const MAX_PIECES = 3
+#Formats of legal wins (For win detection)
+var win_conditions = [
+	["Position0", "Position1", "Position2"],
+	["Position3", "Position4", "Position5"],
+	["Position6", "Position7", "Position8"],
+	["Position0", "Position3", "Position6"],
+	["Position1", "Position4", "Position7"],
+	["Position2", "Position5", "Position8"],
+	["Position0", "Position4", "Position8"],
+	["Position2", "Position4", "Position6"]
+]
+#End game variable
+var game_over = false
 
 func _ready():
 	for area in positions.get_children():
@@ -38,6 +52,9 @@ func _ready():
 	turn_label.text = "Your Turn"
 
 func _on_position_clicked(_viewport, event: InputEvent, _shape_idx: int, area: Area2D):
+	if game_over:
+		return
+
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# Clicked on a position
 		if not in_movement_phase:
@@ -100,7 +117,23 @@ func _handle_movement(area: Area2D):
 			selected_piece = null
 			selected_marker = null
 
-			current_turn = "opponent" if current_turn == "player" else "player"
-			turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
+			if check_win(current_turn):
+				game_over = true
+				turn_label.text = current_turn.capitalize() + " wins!"
+				print(current_turn.capitalize() + " wins!")
+			else:
+				current_turn = "opponent" if current_turn == "player" else "player"
+				turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
 		else:
 			print("Invalid move: ", area.name, " is not adjacent to ", selected_marker.name)
+
+func check_win(player: String) -> bool:
+	for condition in win_conditions:
+		var has_all = true
+		for pos in condition:
+			if not position_occupied.has(pos) or not position_occupied[pos].has(player):
+				has_all = false
+				break
+		if has_all:
+			return true
+	return false
