@@ -15,6 +15,19 @@ var in_movement_phase = false
 var selected_piece = null
 var selected_marker = null
 
+#Map to enforce andjacent moves only
+var adjacency_map = {
+	"Position0": ["Position1", "Position3"],
+	"Position1": ["Position0", "Position2", "Position4"],
+	"Position2": ["Position1", "Position5"],
+	"Position3": ["Position0", "Position4", "Position6"],
+	"Position4": ["Position1", "Position3", "Position5", "Position7"],
+	"Position5": ["Position2", "Position4", "Position8"],
+	"Position6": ["Position3", "Position7"],
+	"Position7": ["Position4", "Position6", "Position8"],
+	"Position8": ["Position5", "Position7"]
+}
+
 const MAX_PIECES = 3
 
 func _ready():
@@ -59,30 +72,35 @@ func _handle_placement(area: Area2D):
 		turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
 
 func _handle_movement(area: Area2D):
-	if not selected_piece:
-		# Attempt to select your own piece from a marker
-		if position_occupied.has(area.name):
-			var data = position_occupied[area.name]
-			if current_turn in data:
+	# If the clicked marker has a piece belonging to the current player
+	if position_occupied.has(area.name):
+		var data = position_occupied[area.name]
+		if current_turn in data:
+			# Deselects if it's already selected
+			if selected_marker == area:
+				selected_piece = null
+				selected_marker = null
+				print("Deselected piece.")
+			else:
 				selected_piece = data[current_turn]
 				selected_marker = area
 				print("Selected piece from:", area.name)
-	else:
-		# Attempt to move to an empty spot
-		if not position_occupied.has(area.name):
-			# Move the piece to new marker
+			return  # Skip the rest of the logic if selecting
+	#Move to an empty, adjacent marker
+	elif selected_piece and not position_occupied.has(area.name):
+		var valid_moves = adjacency_map.get(selected_marker.name, [])
+		if area.name in valid_moves:
 			selected_marker.remove_child(selected_piece)
 			area.add_child(selected_piece)
 			selected_piece.position = Vector2.ZERO
 
-			# Update board state
 			position_occupied.erase(selected_marker.name)
 			position_occupied[area.name] = {current_turn: selected_piece}
 
-			# Reset selection
 			selected_piece = null
 			selected_marker = null
 
-			# Switch turn
 			current_turn = "opponent" if current_turn == "player" else "player"
 			turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
+		else:
+			print("Invalid move: ", area.name, " is not adjacent to ", selected_marker.name)

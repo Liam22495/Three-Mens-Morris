@@ -5,5 +5,5 @@
 [node name="PlayerPiece" type="Node2D"]
 
 [node name="PlayerPiece" type="Sprite2D" parent="."]
-scale = Vector2(0.0576172, 0.0576172)
+scale = Vector2(0.0307617, 0.0307617)
 texture = ExtResource("1_037ip")
