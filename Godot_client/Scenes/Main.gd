@@ -87,6 +87,11 @@ func _handle_placement(area: Area2D):
 		in_movement_phase = true
 		print(">>> Movement phase started <<<")
 		turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
+		if not has_valid_moves(current_turn):
+			game_over = true
+			turn_label.text = current_turn.capitalize() + " has no legal moves. " + \
+				("Player" if current_turn == "opponent" else "Opponent") + " wins!"
+			print(turn_label.text)
 
 func _handle_movement(area: Area2D):
 	# If the clicked marker has a piece belonging to the current player
@@ -123,9 +128,25 @@ func _handle_movement(area: Area2D):
 				print(current_turn.capitalize() + " wins!")
 			else:
 				current_turn = "opponent" if current_turn == "player" else "player"
-				turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
+				# Check if the next player has any moves
+				if not has_valid_moves(current_turn):
+					game_over = true
+					turn_label.text = current_turn.capitalize() + " has no legal moves. " + \
+						("Player" if current_turn == "opponent" else "Opponent") + " wins!"
+					print(turn_label.text)
+				else:
+					turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
 		else:
 			print("Invalid move: ", area.name, " is not adjacent to ", selected_marker.name)
+
+func has_valid_moves(player: String) -> bool:
+	for pos in position_occupied.keys():
+		if position_occupied[pos].has(player):
+			var neighbors = adjacency_map.get(pos, [])
+			for neighbor in neighbors:
+				if not position_occupied.has(neighbor):
+					return true  # At least one legal move exists
+	return false  # No movable pieces
 
 func check_win(player: String) -> bool:
 	for condition in win_conditions:

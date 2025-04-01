@@ -97,8 +97,11 @@ shape = SubResource("CircleShape2D_7rqgy")
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="TurnLabel" type="Label" parent="UI"]
-offset_left = 64.0
-offset_top = 22.0
-offset_right = 252.0
-offset_bottom = 45.0
+offset_left = 30.0
+offset_top = 33.0
+offset_right = 245.0
+offset_bottom = 101.0
 text = "Waiting For Opponent...."
+horizontal_alignment = 1
+autowrap_mode = 2
+uppercase = true
