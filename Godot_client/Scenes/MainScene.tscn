@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bfqhi3iqcv8vr"]
 
-[ext_resource type="Texture2D" uid="uid://bthdmw6cs4ejf" path="res://Three_Men's_Morris_variant_board.svg.png" id="1_3mqji"]
+[ext_resource type="Texture2D" uid="uid://bthdmw6cs4ejf" path="res://assets/board_background.png" id="1_hpc76"]
 
 [node name="MainScene" type="Node2D"]
 
@@ -9,7 +9,7 @@
 [node name="Background" type="Sprite2D" parent="Board"]
 position = Vector2(565, 313)
 scale = Vector2(3.72917, 3.72917)
-texture = ExtResource("1_3mqji")
+texture = ExtResource("1_hpc76")
 
 [node name="Positons" type="Node2D" parent="Board/Background"]
 

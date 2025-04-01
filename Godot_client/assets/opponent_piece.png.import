@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bthdmw6cs4ejf"
-path="res://.godot/imported/Three_Men's_Morris_variant_board.svg.png-55fdb67e260e75465fa69d0ae51551b6.ctex"
+uid="uid://b6uopwgpvmqv7"
+path="res://.godot/imported/opponent_piece.png-a8a27be6e3406f4dc4ad028c45cd6837.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Three_Men's_Morris_variant_board.svg.png"
-dest_files=["res://.godot/imported/Three_Men's_Morris_variant_board.svg.png-55fdb67e260e75465fa69d0ae51551b6.ctex"]
+source_file="res://assets/opponent_piece.png"
+dest_files=["res://.godot/imported/opponent_piece.png-a8a27be6e3406f4dc4ad028c45cd6837.ctex"]
 
 [params]
 
