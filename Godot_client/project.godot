@@ -16,8 +16,12 @@ config/features=PackedStringArray("4.4", "Forward Plus")
 
 [autoload]
 
-MultiplayerManager="*res://NetworkingScripts/MultiplayerManager.gd"
+MultiplayerManager="*res://Scenes/MultiplayerManager.gd"
+
+[editor]
+
+version_control/autoload_on_startup=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot-socketio/plugin.cfg")
+enabled=PackedStringArray()
