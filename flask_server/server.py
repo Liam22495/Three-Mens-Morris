@@ -38,6 +38,7 @@ def count_player_pieces(positions, player):
 
 @socketio.on("place_piece")
 def handle_place_piece(data):
+    print("📥 place_piece received:", data)
     session = data["session"]
     player = data["player"]
     pos = data["position"]
@@ -45,16 +46,6 @@ def handle_place_piece(data):
     if session not in games:
         create_game(session)
     game = games[session]
-
-    # Assign player ID if not yet set
-    if player == "":
-        if len(game["players"]) >= 2:
-            emit("move_rejected", {"reason": "Game is full"}, room=request.sid)
-            return
-        assigned_id = "player1" if "player1" not in game["players"] else "player2"
-        game["players"].append(assigned_id)
-        emit("assign_player_id", {"player_id": assigned_id}, room=request.sid)
-        return  # client will resend with correct player ID
 
     # Validate turn and position
     if game["turn"] != player:
@@ -65,6 +56,7 @@ def handle_place_piece(data):
         return
 
     game["positions"][pos] = player
+    print(f"✅ {player} placed at {pos}")
 
     # Switch to movement phase after 3 pieces each
     if count_player_pieces(game["positions"], "player1") >= 3 and count_player_pieces(game["positions"], "player2") >= 3:
@@ -77,6 +69,7 @@ def handle_place_piece(data):
         "turn": game["turn"],
         "phase": game["phase"]
     }, room=session)
+
 
 @socketio.on("move_piece")
 def handle_move_piece(data):
@@ -136,9 +129,35 @@ def handle_move_piece(data):
         "phase": game["phase"]
     }, room=session)
 
+
 @socketio.on("connect")
 def on_connect():
-    print("🔌 Client connected:", request.sid)
+    sid = request.sid
+    print("🔌 Client connected:", sid)
+
+    # Auto-assign player ID
+    session = "default-session"
+    if session not in games:
+        create_game(session)
+
+    game = games[session]
+
+    if len(game["players"]) >= 2:
+        emit("move_rejected", {"reason": "Game full"}, room=sid)
+        return
+
+    assigned = "player1" if "player1" not in game["players"] else "player2"
+    game["players"].append(assigned)
+    emit("assign_player_id", {"player_id": assigned}, room=sid)
+    print(f"✅ Assigned {assigned} to {sid}")
+
+    # 🔥 This part was missing — now fixed
+    socketio.emit("update_state", {
+        "positions": game["positions"],
+        "turn": game["turn"],
+        "phase": game["phase"]
+    }, room=sid)
+
 
 @socketio.on("disconnect")
 def on_disconnect():
