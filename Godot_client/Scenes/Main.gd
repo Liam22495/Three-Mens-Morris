@@ -218,7 +218,6 @@ func update_board_visual(board: Dictionary):
 			if not child is CollisionShape2D:
 				child.queue_free()
 
-
 	# Rebuild from server state
 	for position_name in board.keys():
 		var owner_sid = board[position_name]
