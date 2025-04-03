@@ -30,14 +30,15 @@ class GameSession:
             and self.piece_counts[sid] < self.max_pieces
         )
 
-    def place_piece(self, sid, position):
+    def place_piece(self, sid, position, adjacency_map):
         if self.can_place(sid, position):
             self.board[position] = sid
             self.piece_counts[sid] += 1
             self._advance_turn()
-            self._check_transition_to_movement()
+            self._check_transition_to_movement(adjacency_map)
             return True
         return False
+
 
     def can_move(self, sid, from_pos, to_pos, adjacency_map):
         print(
@@ -85,9 +86,14 @@ class GameSession:
     def _advance_turn(self):
         self.turn = self.get_opponent(self.turn)
 
-    def _check_transition_to_movement(self):
+    def _check_transition_to_movement(self, adjacency_map):
         if all(count == self.max_pieces for count in self.piece_counts.values()):
             self.phase = "movement"
+
+            # 👇 Immediately check if current player has valid moves
+            if not self._has_valid_moves(self.turn, adjacency_map):
+                self.winner = self.get_opponent(self.turn)
+
 
     def _check_win(self, sid):
         win_conditions = [

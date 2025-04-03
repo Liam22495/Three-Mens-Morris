@@ -84,7 +84,7 @@ def handle_place_piece(data):
         emit("error", {"message": "Invalid game or position"})
         return
 
-    if game.place_piece(sid, position):
+    if game.place_piece(sid, position, adjacency_map):
         emit(
             "update_board",
             {"board": game.board, "turn": game.turn, "phase": game.phase},

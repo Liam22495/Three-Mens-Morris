@@ -181,13 +181,24 @@ func _on_socket_event(event_name: String, payload: Variant, _namespace: String):
 			current_turn = payload["turn"]
 			in_movement_phase = payload["phase"] == "movement"
 
-			update_board_visual(payload["board"])  # 👈 Draw the board
+			update_board_visual(payload["board"])
 			print("📦 Board updated! Turn is now:", current_turn)
-			
-			if current_turn == player_id:
-				turn_label.text = "Your Turn"
+
+			if game_over:
+				return
+
+			# ✅ Check if the current player has no legal moves when movement phase begins
+			if in_movement_phase and not has_valid_moves(current_turn):
+				game_over = true
+				if current_turn == player_id:
+					turn_label.text = "You have no legal moves — You lost!"
+				else:
+					turn_label.text = "Opponent has no legal moves — You win!"
 			else:
-				turn_label.text = "Opponent's Turn"
+				if current_turn == player_id:
+					turn_label.text = "Your Turn"
+				else:
+					turn_label.text = "Opponent's Turn"
 
 		"game_over":
 			var winner = payload["winner"]
