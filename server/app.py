@@ -90,6 +90,11 @@ def handle_place_piece(data):
             {"board": game.board, "turn": game.turn, "phase": game.phase},
             room=game_id,
         )
+        
+        # ✅ Send game_over if someone won after placing
+        if game.winner:
+            emit("game_over", {"winner": game.winner}, room=game_id)
+
     else:
         emit("error", {"message": "Invalid placement"})
 

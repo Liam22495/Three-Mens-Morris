@@ -106,22 +106,39 @@ func _handle_movement(area: Area2D):
 	if position_occupied.has(area.name):
 		var data = position_occupied[area.name]
 		if current_turn in data:
-			# Deselects if it's already selected
+			# Deselect previously selected piece (if already selected)
 			if selected_marker == area:
+				var prev_highlight = selected_piece.get_node_or_null("Highlight")
+				if prev_highlight:
+					prev_highlight.visible = false
+
 				selected_piece = null
 				selected_marker = null
 				print("Deselected piece.")
+
 			else:
+				# Deselect any previously selected piece
+				if selected_marker and selected_piece:
+					var prev_highlight = selected_piece.get_node_or_null("Highlight")
+					if prev_highlight:
+						prev_highlight.visible = false
+
+				# Select new piece
 				selected_piece = data[current_turn]
 				selected_marker = area
 				print("Selected piece from:", area.name)
-			return  # Skip the rest of the logic if selecting
+
+				var new_highlight = selected_piece.get_node_or_null("Highlight")
+				if new_highlight:
+					new_highlight.visible = true
+			return  # Done selecting, skip move logic
 
 	elif selected_piece and not position_occupied.has(area.name):
 		var valid_moves = adjacency_map.get(selected_marker.name, [])
 		print("💡 Attempting move from %s to %s" % [selected_marker.name, area.name])
 		print("📍 Valid moves:", valid_moves)
-		if area.name in valid_moves and current_turn == player_id:
+
+		if area.name in valid_moves:
 			print("🚀 Emitting move_piece:", selected_marker.name, "➡", area.name)
 			socket.socketio_send("move_piece", {
 				"game_id": game_id,
@@ -129,23 +146,15 @@ func _handle_movement(area: Area2D):
 				"to": area.name
 			})
 
+			# Reset selection + hide highlight
+			var highlight = selected_piece.get_node_or_null("Highlight")
+			if highlight:
+				highlight.visible = false
+
 			selected_piece = null
 			selected_marker = null
-
 		else:
 			print("Invalid move: ", area.name, " is not adjacent to ", selected_marker.name)
-
-func has_valid_moves(player: String) -> bool:
-	for pos in position_occupied.keys():
-		if position_occupied[pos] == null:
-			continue
-		if position_occupied[pos].has(player):
-			var neighbors = adjacency_map.get(pos, [])
-			for neighbor in neighbors:
-				if not position_occupied.has(neighbor):
-					return true  # At least one move exists
-	return false
-
 
 func check_win(player: String) -> bool:
 	for condition in win_conditions:
@@ -187,18 +196,10 @@ func _on_socket_event(event_name: String, payload: Variant, _namespace: String):
 			if game_over:
 				return
 
-			# ✅ Check if the current player has no legal moves when movement phase begins
-			if in_movement_phase and not has_valid_moves(current_turn):
-				game_over = true
-				if current_turn == player_id:
-					turn_label.text = "You have no legal moves — You lost!"
-				else:
-					turn_label.text = "Opponent has no legal moves — You win!"
+			if current_turn == player_id:
+				turn_label.text = "Your Turn"
 			else:
-				if current_turn == player_id:
-					turn_label.text = "Your Turn"
-				else:
-					turn_label.text = "Opponent's Turn"
+				turn_label.text = "Opponent's Turn"
 
 		"game_over":
 			var winner = payload["winner"]

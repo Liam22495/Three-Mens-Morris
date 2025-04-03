@@ -34,6 +34,12 @@ class GameSession:
         if self.can_place(sid, position):
             self.board[position] = sid
             self.piece_counts[sid] += 1
+
+            # ✅ Check win after placing
+            if self._check_win(sid):
+                self.winner = sid
+                return True
+
             self._advance_turn()
             self._check_transition_to_movement(adjacency_map)
             return True
@@ -66,21 +72,14 @@ class GameSession:
             if self._check_win(sid):
                 self.winner = sid
             else:
-                opponent_sid = self.get_opponent(sid)
-
-                print(f"🔎 Checking if opponent {opponent_sid} has valid moves...")
-                print(f"Board snapshot: {self.board}")
-
-                if not self._has_valid_moves(opponent_sid, adjacency_map):
-                    self.winner = sid  # sid wins because opponent is stuck
-                else:
-                    self._advance_turn()
+                self._advance_turn()
 
             print("✅ Move accepted")
             return True
 
         print("❌ Move rejected")
         return False
+
 
     def _advance_turn(self):
         self.turn = self.get_opponent(self.turn)
@@ -89,9 +88,7 @@ class GameSession:
         if all(count == self.max_pieces for count in self.piece_counts.values()):
             self.phase = "movement"
 
-            # 👇 Immediately check if current player has valid moves
-            if not self._has_valid_moves(self.turn, adjacency_map):
-                self.winner = self.get_opponent(self.turn)
+
 
     def _check_win(self, sid):
         win_conditions = [
@@ -110,16 +107,6 @@ class GameSession:
                 return True
         return False
 
-
-    def _has_valid_moves(self, sid, adjacency_map):
-        for pos, owner in self.board.items():
-            if owner == sid:
-                neighbors = adjacency_map.get(pos, [])
-                for neighbor in neighbors:
-                    if self.board.get(neighbor) is None:
-                        return True
-        print(f"❌ No legal moves found for {sid}")            
-        return False
 
     def _get_adjacent_positions(self, position):
         adjacency_map = {
