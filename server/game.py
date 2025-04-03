@@ -1,5 +1,6 @@
 import uuid
 
+
 class GameSession:
     def __init__(self):
         self.board = {f"Position{i}": None for i in range(9)}  # Positions 0 to 8
@@ -39,6 +40,9 @@ class GameSession:
         return False
 
     def can_move(self, sid, from_pos, to_pos, adjacency_map):
+        print(
+            f"🧠 CAN_MOVE check: turn={self.turn}, sid={sid}, from={from_pos}, to={to_pos}"
+        )
         return (
             self.phase == "movement"
             and self.turn == sid
@@ -48,15 +52,35 @@ class GameSession:
         )
 
     def move_piece(self, sid, from_pos, to_pos, adjacency_map):
+        print(f"🔁 Move requested from {from_pos} to {to_pos} by {sid}")
+        print(f"Current turn: {self.turn}, Phase: {self.phase}")
+        print(f"Board ownership @ {from_pos}: {self.board[from_pos]}")
+        print(f"Board empty @ {to_pos}: {self.board[to_pos] is None}")
+        print(f"Is adjacent: {to_pos in adjacency_map[from_pos]}")
+
         if self.can_move(sid, from_pos, to_pos, adjacency_map):
             self.board[from_pos] = None
             self.board[to_pos] = sid
+
             if self._check_win(sid):
                 self.winner = sid
             else:
-                self._advance_turn()
+                opponent_sid = self.get_opponent(sid)
+
+                print(f"🔎 Checking if opponent {opponent_sid} has valid moves...")
+                print(f"Board snapshot: {self.board}")
+
+                if not self._has_valid_moves(opponent_sid, adjacency_map):
+                    self.winner = sid  # sid wins because opponent is stuck
+                else:
+                    self._advance_turn()
+
+            print("✅ Move accepted")
             return True
+
+        print("❌ Move rejected")
         return False
+
 
     def _advance_turn(self):
         self.turn = self.get_opponent(self.turn)
@@ -77,9 +101,34 @@ class GameSession:
             ["Position2", "Position4", "Position6"],
         ]
         for condition in win_conditions:
-            if all(self.board[pos] == sid for pos in condition):
-                return True
+            if all(self.board.get(pos) == sid for pos in condition):
+                if all(self.board.get(pos) is not None for pos in condition):
+                    return True
         return False
+
+    def _has_valid_moves(self, sid, adjacency_map):
+        for pos, owner in self.board.items():
+            if owner == sid:
+                neighbors = adjacency_map.get(pos, [])
+                for neighbor in neighbors:
+                    if self.board.get(neighbor) is None:
+                        return True
+        print(f"❌ No legal moves found for {sid}")            
+        return False
+
+    def _get_adjacent_positions(self, position):
+        adjacency_map = {
+            "Position0": ["Position1", "Position3"],
+            "Position1": ["Position0", "Position2", "Position4"],
+            "Position2": ["Position1", "Position5"],
+            "Position3": ["Position0", "Position4", "Position6"],
+            "Position4": ["Position1", "Position3", "Position5", "Position7"],
+            "Position5": ["Position2", "Position4", "Position8"],
+            "Position6": ["Position3", "Position7"],
+            "Position7": ["Position4", "Position6", "Position8"],
+            "Position8": ["Position5", "Position7"],
+        }
+        return adjacency_map.get(position, [])
 
 
 class GameManager:

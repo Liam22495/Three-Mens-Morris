@@ -83,7 +83,6 @@ func _process(_delta):
 	_client.poll()
 
 	var state = _client.get_ready_state()
-	print("Polling... ready state:", state)
 	if state == WebSocketPeer.STATE_OPEN:
 		while _client.get_available_packet_count():
 			var packet = _client.get_packet()

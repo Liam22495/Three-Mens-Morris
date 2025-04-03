@@ -61,7 +61,7 @@ func _ready():
 	socket.connect("on_engine_connected", _on_engine_connected)
 
 func _on_position_clicked(_viewport: Viewport, event: InputEvent, _shape_idx: int, area: Area2D):
-	print("✅ Click detected on:", area.name)
+	#print("✅ Click detected on:", area.name)
 	if game_over:
 		return
 
@@ -99,7 +99,10 @@ func _handle_placement(area: Area2D):
 		print("❌ Not your turn or you’ve placed 3 pieces already.")
 
 func _handle_movement(area: Area2D):
-	# If the clicked marker has a piece belonging to the current player
+	if not in_movement_phase or current_turn != player_id:
+		print("⛔ Can't move: wrong phase or not your turn.")
+		return
+
 	if position_occupied.has(area.name):
 		var data = position_occupied[area.name]
 		if current_turn in data:
@@ -113,44 +116,36 @@ func _handle_movement(area: Area2D):
 				selected_marker = area
 				print("Selected piece from:", area.name)
 			return  # Skip the rest of the logic if selecting
-	#Move to an empty, adjacent marker
+
 	elif selected_piece and not position_occupied.has(area.name):
 		var valid_moves = adjacency_map.get(selected_marker.name, [])
+		print("💡 Attempting move from %s to %s" % [selected_marker.name, area.name])
+		print("📍 Valid moves:", valid_moves)
 		if area.name in valid_moves and current_turn == player_id:
+			print("🚀 Emitting move_piece:", selected_marker.name, "➡", area.name)
 			socket.socketio_send("move_piece", {
 				"game_id": game_id,
 				"from": selected_marker.name,
 				"to": area.name
 			})
-			# Temporarily reset selection
+
 			selected_piece = null
 			selected_marker = null
 
-			if check_win(current_turn):
-				game_over = true
-				turn_label.text = current_turn.capitalize() + " wins!"
-				print(current_turn.capitalize() + " wins!")
-			else:
-				current_turn = "opponent" if current_turn == "player" else "player"
-				# Check if the next player has any moves
-				if not has_valid_moves(current_turn):
-					game_over = true
-					turn_label.text = current_turn.capitalize() + " has no legal moves. " + \
-						("Player" if current_turn == "opponent" else "Opponent") + " wins!"
-					print(turn_label.text)
-				else:
-					turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
 		else:
 			print("Invalid move: ", area.name, " is not adjacent to ", selected_marker.name)
 
 func has_valid_moves(player: String) -> bool:
 	for pos in position_occupied.keys():
+		if position_occupied[pos] == null:
+			continue
 		if position_occupied[pos].has(player):
 			var neighbors = adjacency_map.get(pos, [])
 			for neighbor in neighbors:
 				if not position_occupied.has(neighbor):
-					return true  # At least one legal move exists
-	return false  # No movable pieces
+					return true  # At least one move exists
+	return false
+
 
 func check_win(player: String) -> bool:
 	for condition in win_conditions:
@@ -212,6 +207,8 @@ func _on_engine_connected(sid: String):
 
 func update_board_visual(board: Dictionary):
 	position_occupied.clear()
+	selected_marker = null
+	selected_piece = null
 
 	for area in positions.get_children():
 		for child in area.get_children():
@@ -229,10 +226,10 @@ func update_board_visual(board: Dictionary):
 
 		if owner_sid == player_id:
 			piece = PlayerPieceScene.instantiate()
-			position_occupied[position_name] = { "player": piece }
 		else:
 			piece = OpponentPieceScene.instantiate()
-			position_occupied[position_name] = { "opponent": piece }
+
+		position_occupied[position_name] = { owner_sid: piece }
 
 		piece.position = Vector2.ZERO
 		area.add_child(piece)
