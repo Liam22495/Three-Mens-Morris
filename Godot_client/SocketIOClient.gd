@@ -75,17 +75,21 @@ func _preprocess_url(url: String) -> String:
 	return url
 
 func _ready():
+	print("Socket client ready, connecting...")
+	set_process(true)  # <-- Required to start _process()
 	_client.connect_to_url(_url)
 
 func _process(_delta):
 	_client.poll()
 
 	var state = _client.get_ready_state()
+	print("Polling... ready state:", state)
 	if state == WebSocketPeer.STATE_OPEN:
 		while _client.get_available_packet_count():
 			var packet = _client.get_packet()
 			var packetString = packet.get_string_from_utf8()
 			if len(packetString) > 0:
+				print("Received packet: ", packetString)
 				_engineio_decode_packet(packetString)
 			# TODO: handle binary data?
 
@@ -138,7 +142,7 @@ func _engineio_decode_packet(packet: String):
 			_sid = json.data["sid"]
 			_pingTimeout = int(json.data["pingTimeout"])
 			_pingInterval = int(json.data["pingInterval"])
-			on_engine_connected.emit(_sid)
+			socketio_connect()
 
 		EngineIOPacketType.ping:
 			_engineio_send_packet(EngineIOPacketType.pong)
@@ -186,6 +190,11 @@ func _socketio_parse_packet(payload: String):
 
 	match packetType:
 		SocketIOPacketType.CONNECT:
+			if typeof(data) == TYPE_DICTIONARY and data.has("sid"):
+				_sid = data["sid"]
+			on_connect.emit(data, name_space, false)
+			on_engine_connected.emit(_sid) 
+
 			if _connection_state == ConnectionState.RECONNECTING:
 				_connection_state = ConnectionState.CONNECTED
 				on_reconnected.emit(data, name_space, false)
@@ -257,3 +266,6 @@ func socketio_send_multiple_binary(event_name: String, payloads: Array[PackedByt
 
 func get_connection_state() -> ConnectionState:
 	return _connection_state
+	
+func get_sid() -> String:
+	return _sid

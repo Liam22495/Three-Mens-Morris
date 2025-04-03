@@ -1,5 +1,6 @@
 extends Node2D
 
+@onready var socket := preload("res://SocketIOClient.gd").new("http://localhost:5000/socket.io/")
 @export var PlayerPieceScene: PackedScene
 @export var OpponentPieceScene: PackedScene
 
@@ -10,12 +11,13 @@ var current_turn = "player"
 var position_occupied = {}   # e.g., { "Position0": "player" }
 var player_piece_count = 0
 var opponent_piece_count = 0
-
 var in_movement_phase = false
 var selected_piece = null
 var selected_marker = null
-#Piecese per player
 const MAX_PIECES = 3
+var game_over = false
+var game_id = ""
+var player_id = ""
 
 #Map to enforce andjacent moves only (Movment vars)
 var adjacency_map = {
@@ -30,7 +32,6 @@ var adjacency_map = {
 	"Position8": ["Position5", "Position7"]
 }
 
-#Formats of legal wins (For win detection)
 var win_conditions = [
 	["Position0", "Position1", "Position2"],
 	["Position3", "Position4", "Position5"],
@@ -41,17 +42,26 @@ var win_conditions = [
 	["Position0", "Position4", "Position8"],
 	["Position2", "Position4", "Position6"]
 ]
-#End game variable
-var game_over = false
 
 func _ready():
+	await get_tree().process_frame  # Delay 1 frame to ensure nodes exist
+
+	# Setup clickable board positions
 	for area in positions.get_children():
+		print("🔍 Setting up:", area.name)
 		area.input_pickable = true
 		area.connect("input_event", Callable(self, "_on_position_clicked").bind(area))
+		print("✅ Bound click for", area.name)
 
-	turn_label.text = "Your Turn"
+	turn_label.text = "Connecting..."
 
-func _on_position_clicked(_viewport, event: InputEvent, _shape_idx: int, area: Area2D):
+	add_child(socket)
+	socket.connect("on_connect", _on_socket_connected)
+	socket.connect("on_event", _on_socket_event)
+	socket.connect("on_engine_connected", _on_engine_connected)
+
+func _on_position_clicked(_viewport: Viewport, event: InputEvent, _shape_idx: int, area: Area2D):
+	print("✅ Click detected on:", area.name)
 	if game_over:
 		return
 
@@ -63,35 +73,30 @@ func _on_position_clicked(_viewport, event: InputEvent, _shape_idx: int, area: A
 			_handle_movement(area)
 
 func _handle_placement(area: Area2D):
-	if area and not position_occupied.has(area.name):
-		if current_turn == "player" and player_piece_count < MAX_PIECES:
-			var piece = PlayerPieceScene.instantiate()
-			piece.position = Vector2.ZERO
-			area.add_child(piece)
-			position_occupied[area.name] = {"player": piece}
-			player_piece_count += 1
-			current_turn = "opponent"
-			turn_label.text = "Opponent's Turn"
+	if game_over:
+		print("❌ Game is over, can't place.")
+		return
 
-		elif current_turn == "opponent" and opponent_piece_count < MAX_PIECES:
-			var piece = OpponentPieceScene.instantiate()
-			piece.position = Vector2.ZERO
-			area.add_child(piece)
-			position_occupied[area.name] = {"opponent": piece}
-			opponent_piece_count += 1
-			current_turn = "player"
-			turn_label.text = "Your Turn"
+	if not area:
+		print("❌ Clicked area is null.")
+		return
 
-	# Check if placement is done
-	if player_piece_count == MAX_PIECES and opponent_piece_count == MAX_PIECES:
-		in_movement_phase = true
-		print(">>> Movement phase started <<<")
-		turn_label.text = current_turn.capitalize() + "'s Turn (Move a piece)"
-		if not has_valid_moves(current_turn):
-			game_over = true
-			turn_label.text = current_turn.capitalize() + " has no legal moves. " + \
-				("Player" if current_turn == "opponent" else "Opponent") + " wins!"
-			print(turn_label.text)
+	print("🟡 Clicked:", area.name)
+	print("🔄 Current Turn:", current_turn)
+	print("🆔 Player ID:", player_id)
+
+	if position_occupied.has(area.name):
+		print("❌ Position already occupied:", area.name)
+		return
+
+	if current_turn == player_id:
+		print("✅ Sending place_piece to server...")
+		socket.socketio_send("place_piece", {
+			"game_id": game_id,
+			"position": area.name
+		})
+	else:
+		print("❌ Not your turn or you’ve placed 3 pieces already.")
 
 func _handle_movement(area: Area2D):
 	# If the clicked marker has a piece belonging to the current player
@@ -111,14 +116,13 @@ func _handle_movement(area: Area2D):
 	#Move to an empty, adjacent marker
 	elif selected_piece and not position_occupied.has(area.name):
 		var valid_moves = adjacency_map.get(selected_marker.name, [])
-		if area.name in valid_moves:
-			selected_marker.remove_child(selected_piece)
-			area.add_child(selected_piece)
-			selected_piece.position = Vector2.ZERO
-
-			position_occupied.erase(selected_marker.name)
-			position_occupied[area.name] = {current_turn: selected_piece}
-
+		if area.name in valid_moves and current_turn == player_id:
+			socket.socketio_send("move_piece", {
+				"game_id": game_id,
+				"from": selected_marker.name,
+				"to": area.name
+			})
+			# Temporarily reset selection
 			selected_piece = null
 			selected_marker = null
 
@@ -158,3 +162,78 @@ func check_win(player: String) -> bool:
 		if has_all:
 			return true
 	return false
+
+func _on_socket_connected(_payload, _namespace, _error):
+	print("Connected to server.")
+	turn_label.text = "Waiting for opponent..."
+
+func _on_socket_event(event_name: String, payload: Variant, _namespace: String):
+	match event_name:
+		"game_created":
+			game_id = payload["game_id"]
+			print("Game created:", game_id)
+			print("My SID is:", player_id)  # player_id is already set in _on_engine_connected
+
+		"game_joined":
+			game_id = payload["game_id"]
+			print("Joined game:", game_id)
+			print("My SID is:", player_id)
+
+		"start_game":
+			print("Game starting...")
+
+		"update_board":
+			current_turn = payload["turn"]
+			in_movement_phase = payload["phase"] == "movement"
+
+			update_board_visual(payload["board"])  # 👈 Draw the board
+			print("📦 Board updated! Turn is now:", current_turn)
+			
+			if current_turn == player_id:
+				turn_label.text = "Your Turn"
+			else:
+				turn_label.text = "Opponent's Turn"
+
+		"game_over":
+			var winner = payload["winner"]
+			if winner == player_id:
+				turn_label.text = "You win!"
+			else:
+				turn_label.text = "You lose!"
+			game_over = true
+
+		"error":
+			print("Server error:", payload["message"])	
+			
+func _on_engine_connected(sid: String):
+	print("Engine connected! SID from server:", sid)
+	player_id = sid
+	socket.socketio_send("join_or_create_game", {})
+
+func update_board_visual(board: Dictionary):
+	position_occupied.clear()
+
+	for area in positions.get_children():
+		for child in area.get_children():
+			if not child is CollisionShape2D:
+				child.queue_free()
+
+
+	# Rebuild from server state
+	for position_name in board.keys():
+		var owner_sid = board[position_name]
+		if owner_sid == null:
+			continue
+
+		var area = positions.get_node(position_name)
+		var piece
+
+		if owner_sid == player_id:
+			piece = PlayerPieceScene.instantiate()
+			position_occupied[position_name] = { "player": piece }
+		else:
+			piece = OpponentPieceScene.instantiate()
+			position_occupied[position_name] = { "opponent": piece }
+
+		piece.position = Vector2.ZERO
+		area.add_child(piece)

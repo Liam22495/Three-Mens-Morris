@@ -14,10 +14,6 @@ config/name="ThreeMensMoriss"
 run/main_scene="uid://bfqhi3iqcv8vr"
 config/features=PackedStringArray("4.4", "Forward Plus")
 
-[autoload]
-
-MultiplayerManager="*res://Scenes/MultiplayerManager.gd"
-
 [editor]
 
 version_control/autoload_on_startup=true
