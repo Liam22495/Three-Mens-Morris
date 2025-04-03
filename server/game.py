@@ -82,7 +82,6 @@ class GameSession:
         print("❌ Move rejected")
         return False
 
-
     def _advance_turn(self):
         self.turn = self.get_opponent(self.turn)
 
@@ -93,7 +92,6 @@ class GameSession:
             # 👇 Immediately check if current player has valid moves
             if not self._has_valid_moves(self.turn, adjacency_map):
                 self.winner = self.get_opponent(self.turn)
-
 
     def _check_win(self, sid):
         win_conditions = [
@@ -106,11 +104,12 @@ class GameSession:
             ["Position0", "Position4", "Position8"],
             ["Position2", "Position4", "Position6"],
         ]
+        
         for condition in win_conditions:
             if all(self.board.get(pos) == sid for pos in condition):
-                if all(self.board.get(pos) is not None for pos in condition):
-                    return True
+                return True
         return False
+
 
     def _has_valid_moves(self, sid, adjacency_map):
         for pos, owner in self.board.items():
