@@ -8,7 +8,7 @@ extends Node2D
 @onready var turn_label = $UI/TurnLabel
 
 var current_turn = "player"
-var position_occupied = {}   # e.g., { "Position0": "player" }
+var position_occupied = {}   # e.g Position0": "player" }
 var player_piece_count = 0
 var opponent_piece_count = 0
 var in_movement_phase = false
@@ -19,7 +19,7 @@ var game_over = false
 var game_id = ""
 var player_id = ""
 
-#Map to enforce andjacent moves only (Movment vars)
+#Map to enforce andjacent moves
 var adjacency_map = {
 	"Position0": ["Position1", "Position3"],
 	"Position1": ["Position0", "Position2", "Position4"],
@@ -31,7 +31,7 @@ var adjacency_map = {
 	"Position7": ["Position4", "Position6", "Position8"],
 	"Position8": ["Position5", "Position7"]
 }
-
+#Map to enforce win conditions
 var win_conditions = [
 	["Position0", "Position1", "Position2"],
 	["Position3", "Position4", "Position5"],
@@ -61,7 +61,6 @@ func _ready():
 	socket.connect("on_engine_connected", _on_engine_connected)
 
 func _on_position_clicked(_viewport: Viewport, event: InputEvent, _shape_idx: int, area: Area2D):
-	#print("✅ Click detected on:", area.name)
 	if game_over:
 		return
 
@@ -176,7 +175,7 @@ func _on_socket_event(event_name: String, payload: Variant, _namespace: String):
 		"game_created":
 			game_id = payload["game_id"]
 			print("Game created:", game_id)
-			print("My SID is:", player_id)  # player_id is already set in _on_engine_connected
+			print("My SID is:", player_id)
 
 		"game_joined":
 			game_id = payload["game_id"]

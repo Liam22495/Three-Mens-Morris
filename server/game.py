@@ -35,7 +35,7 @@ class GameSession:
             self.board[position] = sid
             self.piece_counts[sid] += 1
 
-            # ✅ Check win after placing
+            # Check win after placing
             if self._check_win(sid):
                 self.winner = sid
                 return True
@@ -74,7 +74,7 @@ class GameSession:
             else:
                 self._advance_turn()
 
-            print("✅ Move accepted")
+            print("Move accepted")
             return True
 
         print("❌ Move rejected")

@@ -53,7 +53,7 @@ def handle_join_or_create_game(data):
                 emit("game_joined", {"game_id": game_id}, room=game_id)
                 emit("start_game", {"status": "start"}, room=game_id)
 
-                # ✅ Emit first board update right after game starts
+                # Emit first board update right after game starts
                 emit(
                     "update_board",
                     {
@@ -91,7 +91,7 @@ def handle_place_piece(data):
             room=game_id,
         )
         
-        # ✅ Send game_over if someone won after placing
+        # Send game_over if someone won after placing
         if game.winner:
             emit("game_over", {"winner": game.winner}, room=game_id)
 
